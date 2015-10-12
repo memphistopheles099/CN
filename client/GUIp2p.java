@@ -17,6 +17,11 @@ import javax.swing.DropMode;
 import javax.swing.JTextArea;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.net.Socket;
+
+class chatListener extends Thread{
+	//public chatListener()
+}
 
 public class GUIp2p {
 
@@ -35,24 +40,25 @@ public class GUIp2p {
 	
 	/**
 	 * Launch the application.
-	 
+	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					GUIp2p window = new GUIp2p();
+					GUIp2p window = new GUIp2p(null);
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
-	}*/
+	}
 
 	/**
 	 * Create the application.
 	 */
-	public GUIp2p() {
+	public GUIp2p(Socket s) {
+		
 		initialize();
 	}
 

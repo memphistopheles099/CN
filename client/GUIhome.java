@@ -39,6 +39,37 @@ import org.w3c.dom.NodeList;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+class startChat extends Thread{
+	Socket chat;
+	public startChat(Socket s){
+		chat = s;
+	}
+	public void run(){
+		/*
+		 * Read first message to know who is talking
+		 * and then generate GUIp2p
+		 */
+	}
+}
+class chatWaiter extends Thread{
+	ServerSocket server;
+	public chatWaiter(ServerSocket s){
+		server=s;
+	}
+	public void run(){
+		while (true){
+			try {
+				Socket c = server.accept();
+				
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+}
+
 
 class Peer {
 	String name;
@@ -59,7 +90,8 @@ public class GUIhome {
 	JFrame frame;
 	private Socket csocket=null;
 	private ServerSocket ssocket=null;
-	public String name;
+	Thread waiter;
+	String name;
 	/**
 	 * Launch the application.
 	 */
@@ -91,6 +123,8 @@ public class GUIhome {
 	private void initialize() {
 		try {
 			ssocket = new ServerSocket(0);
+			waiter = new chatWaiter(ssocket);
+			waiter.start();
 			csocket = new Socket(InetAddress.getLocalHost(),6000);
 			frame = new JFrame();
 			frame.setTitle("4N+T");
@@ -151,17 +185,31 @@ public class GUIhome {
 			JButton btnChat = new JButton("Chat");
 			btnChat.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					GUIp2p chatWindow = new GUIp2p();
-					chatWindow.frame.setVisible(true);
+					int idx = list.getSelectedIndex();
+					GUIp2p chatWindow;
+					try {
+						chatWindow = new GUIp2p(new Socket(buddyList.getElementAt(idx).IP,buddyList.getElementAt(idx).port));
+						chatWindow.frame.setVisible(true);
+					} catch (UnknownHostException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			});
-			//list.setModel(buddyList);
 			
 			
 			
 			
 			
 			JButton btnngXut = new JButton("\u0110\u0103ng xu\u1EA5t");
+			btnngXut.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					waiter.stop();
+				}
+			});
 			
 			JLabel lblDanhSchOnline = new JLabel("Danh s\u00E1ch online");
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
