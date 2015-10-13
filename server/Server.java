@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.w3c.dom.*;
@@ -31,6 +32,8 @@ class StreamHandler extends Thread{
 				DefaultListModel<Account> list = Server.getList();
 				Document doc = (Document)in.readObject();
 				Element root = doc.getDocumentElement();
+				
+				// Read MESSAGE
 				switch(root.getNodeName()){
 				case "LOGIN":{  // Login Event
 					String id = root.getElementsByTagName("ID").item(0).getTextContent();
@@ -106,6 +109,15 @@ class StreamHandler extends Thread{
 						e.printStackTrace();
 					}
 				}
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				}
 				
 			} catch (ClassNotFoundException e) {
@@ -133,7 +145,6 @@ public class Server {
 		return accountList;
 	}
 	public static void main(String[] args) throws IOException{
-		
 		int port = 6000;
 		ServerSocket sSocket= new ServerSocket(port);
 		Server.initList();

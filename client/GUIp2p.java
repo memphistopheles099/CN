@@ -74,6 +74,15 @@ public class GUIp2p {
 		textAreaMsgShow.setText(textAreaMsgShow.getText()+"name: ");
 	}
 	private void initialize(){
+		frame.addWindowListener(new java.awt.event.WindowAdapter(){
+			public void windowClosing(java.awt.event.WindowEvent e){
+				/*
+				 * 
+				 *  xoa khoi windowList trong GUIhome
+				 *  
+				 */
+			}
+		});
 		try {
 			toPeer = new Socket(IP,port);
 			frame = new JFrame();

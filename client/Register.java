@@ -65,6 +65,7 @@ public class Register {
 			public void actionPerformed(ActionEvent e) {
 				/*
 				 * Send register_message to server
+				 * Using Server.addAccount( Account )
 				 */
 			}
 		});

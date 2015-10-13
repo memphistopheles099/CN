@@ -52,12 +52,12 @@ class startChat extends Thread{
 			while (true){
 				try {
 					Document message = (Document)in.readObject();
-					Element root = message.getDocumentElement();
-					String name = root.getElementsByTagName("NAME").item(0).getTextContent();
+					Element root = message.getElementById("SESSION_CHAT_ME");
+					String name = ((Element)root.getElementsByTagName("NAME").item(0)).getTextContent();
 					if(created)
 						for (int i = 0; i < GUIhome.windowList.getSize(); i++){
 							if (name.equals(GUIhome.windowList.elementAt(i).name)){
-								GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("SESSION_CHAT_ME").item(0).getTextContent());
+								GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("MESSAGE").item(0).getTextContent());
 								break;
 							}
 						}
@@ -134,6 +134,7 @@ public class GUIhome {
 	private ServerSocket ssocket=null;
 	Thread waiter;
 	String name;
+	JButton btnLogout;
 	/**
 	 * Launch the application.
 	 */
@@ -163,6 +164,11 @@ public class GUIhome {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		frame.addWindowListener(new java.awt.event.WindowAdapter(){
+			public void windowClosing(java.awt.event.WindowEvent e){
+				btnLogout.doClick();
+			}
+		});
 		try {
 			ssocket = new ServerSocket(0);
 			waiter = new chatWaiter(ssocket);
@@ -238,14 +244,31 @@ public class GUIhome {
 			
 			
 			
-			JButton btnngXut = new JButton("\u0110\u0103ng xu\u1EA5t");
-			btnngXut.addActionListener(new ActionListener() {
+			btnLogout = new JButton("\u0110\u0103ng xu\u1EA5t");
+			btnLogout.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					waiter.stop();
+					/*
+					 * 
+					 * Gui message LOG OUT cho server.
+					 * 
+					 */
 				}
 			});
 			
+			
 			JLabel lblDanhSchOnline = new JLabel("Danh s\u00E1ch online");
+			
+			JButton btnRefresh = new JButton("Refresh");
+			btnRefresh.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					/*
+					 * 
+					 * Yeu cau danh sach moi duoc cap nhat.
+					 * 
+					 */
+				}
+			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 			groupLayout.setHorizontalGroup(
 				groupLayout.createParallelGroup(Alignment.LEADING)
@@ -258,8 +281,9 @@ public class GUIhome {
 								.addComponent(list, GroupLayout.PREFERRED_SIZE, 198, GroupLayout.PREFERRED_SIZE)
 								.addPreferredGap(ComponentPlacement.UNRELATED)
 								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-									.addComponent(btnngXut, GroupLayout.DEFAULT_SIZE, 83, Short.MAX_VALUE)
-									.addComponent(btnChat, GroupLayout.DEFAULT_SIZE, 83, Short.MAX_VALUE))))
+									.addComponent(btnLogout, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
+									.addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
+									.addComponent(btnChat, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE))))
 						.addContainerGap())
 			);
 			groupLayout.setVerticalGroup(
@@ -270,9 +294,11 @@ public class GUIhome {
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
 							.addGroup(groupLayout.createSequentialGroup()
-								.addComponent(btnChat, GroupLayout.PREFERRED_SIZE, 75, GroupLayout.PREFERRED_SIZE)
+								.addComponent(btnChat, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
 								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(btnngXut, GroupLayout.PREFERRED_SIZE, 79, GroupLayout.PREFERRED_SIZE)
+								.addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(btnLogout, GroupLayout.PREFERRED_SIZE, 61, GroupLayout.PREFERRED_SIZE)
 								.addGap(7))
 							.addComponent(list, GroupLayout.PREFERRED_SIZE, 201, GroupLayout.PREFERRED_SIZE))
 						.addContainerGap())
