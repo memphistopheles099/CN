@@ -112,6 +112,7 @@ public class Login {
 								if (response.getTextContent().equals("ACCEPT")){
 									GUIhome home = new GUIhome(textName.getText());
 									home.frame.setVisible(true);
+									frmLogin.setVisible(false);
 								}
 								else{
 									JOptionPane.showMessageDialog(null, "Wrong Name/Password.");

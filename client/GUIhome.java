@@ -39,18 +39,47 @@ import org.w3c.dom.NodeList;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+
 class startChat extends Thread{
-	Socket chat;
-	public startChat(Socket s){
-		chat = s;
+	private Socket chat;
+	public startChat(Socket c){
+		chat = c;
 	}
 	public void run(){
-		/*
-		 * Read first message to know who is talking
-		 * and then generate GUIp2p
-		 */
+		try {
+			ObjectInputStream in = new ObjectInputStream(chat.getInputStream());
+			Boolean created = false;
+			while (true){
+				try {
+					Document message = (Document)in.readObject();
+					Element root = message.getDocumentElement();
+					String name = root.getElementsByTagName("NAME").item(0).getTextContent();
+					if(created)
+						for (int i = 0; i < GUIhome.windowList.getSize(); i++){
+							if (name.equals(GUIhome.windowList.elementAt(i).name)){
+								GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("SESSION_CHAT_ME").item(0).getTextContent());
+								break;
+							}
+						}
+					else{
+						GUIhome.newWindow(root.getElementsByTagName("NAME").item(0).getTextContent(),
+								root.getElementsByTagName("IP").item(0).getTextContent(),
+								Integer.parseInt(root.getElementsByTagName("PORT").item(0).getTextContent()),
+								root.getElementsByTagName("SESSION_CHAT_ME").item(0).getTextContent());
+					}
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 }
+
 class chatWaiter extends Thread{
 	ServerSocket server;
 	public chatWaiter(ServerSocket s){
@@ -60,7 +89,7 @@ class chatWaiter extends Thread{
 		while (true){
 			try {
 				Socket c = server.accept();
-				
+				Thread chat = new startChat(c);
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -86,7 +115,20 @@ class Peer {
 }
 
 public class GUIhome {
-
+	public static DefaultListModel<GUIp2p> windowList = new DefaultListModel<GUIp2p>();
+	public static void newWindow(String name, String ip, int port, String msg){
+		GUIp2p chat;
+		chat = new GUIp2p(name, ip, port);
+		chat.frame.setVisible(true);
+		chat.receiveMessage(msg);
+		windowList.addElement(chat);
+	}
+	public static void closeWindow(String name){
+		for (int i = 0; i < windowList.size(); i++){
+			if (windowList.getElementAt(i).name.equals(name))
+				windowList.remove(i);
+		}
+	}
 	JFrame frame;
 	private Socket csocket=null;
 	private ServerSocket ssocket=null;
@@ -187,16 +229,8 @@ public class GUIhome {
 				public void actionPerformed(ActionEvent e) {
 					int idx = list.getSelectedIndex();
 					GUIp2p chatWindow;
-					try {
-						chatWindow = new GUIp2p(new Socket(buddyList.getElementAt(idx).IP,buddyList.getElementAt(idx).port));
-						chatWindow.frame.setVisible(true);
-					} catch (UnknownHostException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
+					chatWindow = new GUIp2p(buddyList.getElementAt(idx).name,buddyList.getElementAt(idx).IP,buddyList.getElementAt(idx).port);
+					chatWindow.frame.setVisible(true);
 				}
 			});
 			
