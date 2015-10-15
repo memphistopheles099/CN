@@ -86,7 +86,12 @@ public class Login {
 		
 		JLabel lblPassword = new JLabel("Password:");
 		lblPassword.setFont(new Font("Tahoma", Font.BOLD, 11));
+
+		ObjectOutputStream oos;
+		try {
+			oos = new ObjectOutputStream(cSocket.getOutputStream());
 		
+		ObjectInputStream ios = new ObjectInputStream(cSocket.getInputStream());
 		JButton btnLogin = new JButton("Login");
 		btnLogin.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnLogin.addActionListener(new ActionListener() {
@@ -102,11 +107,9 @@ public class Login {
 					pass.appendChild(doc.createTextNode(textPassword.getText()));
 					log.appendChild(pass);
 					try {
-						ObjectOutputStream out = new ObjectOutputStream(cSocket.getOutputStream());
-						out.writeObject(doc);
-						ObjectInputStream in = new ObjectInputStream(cSocket.getInputStream());
+						oos.writeObject(doc);
 						try {
-							Document docin = (Document) in.readObject();
+							Document docin = (Document) ios.readObject();
 							Element response = docin.getDocumentElement();
 							if (response.getNodeName().equals(Header.RESPONSE)){
 								if (response.getTextContent().equals("ACCEPT")){
@@ -192,5 +195,9 @@ public class Login {
 					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 		);
 		frmLogin.getContentPane().setLayout(groupLayout);
-	}
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		}
 }

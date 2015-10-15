@@ -177,7 +177,7 @@ public class GUIp2p {
 						chat.appendChild(mes);
 						try {
 							out.writeObject(msg);
-							System.out.println(host+"send to "+toPeer+": "+textAreaMsgType.getText());
+							System.out.println(host+" send: "+textAreaMsgType.getText());
 							textAreaMsgShow.setText(textAreaMsgShow.getText()+"Me: "+textAreaMsgType.getText()+"\n");
 							textAreaMsgType.setText("");
 						} catch (IOException e1) {
@@ -238,7 +238,47 @@ public class GUIp2p {
 					 *  xoa khoi windowList trong GUIhome
 					 *  
 					 */
-					GUIhome.closeWindow(name);
+					try {
+						Document msgclose1 = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element chat = msgclose1.createElement(Header.CHAT);
+						msgclose1.appendChild(chat);
+						Element chatName = msgclose1.createElement(Header.ID);
+						chatName.appendChild(msgclose1.createTextNode(host.name));
+						chat.appendChild(chatName);
+						Element chatIP = msgclose1.createElement("IP");
+						chatIP.appendChild(msgclose1.createTextNode(host.IP));
+						chat.appendChild(chatIP);
+						Element chatPort = msgclose1.createElement("PORT");
+						chatPort.appendChild(msgclose1.createTextNode(String.valueOf(host.port)));
+						chat.appendChild(chatPort);
+						Element mes = msgclose1.createElement("MESSAGE");
+						mes.appendChild(msgclose1.createTextNode("HAS JUST CLOSED CHAT WINDOW!"));
+						chat.appendChild(mes);
+						Document msgclose2;
+					
+						msgclose2 = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element cls = msgclose2.createElement(Header.CLSWIN);
+						cls.appendChild(msgclose2.createTextNode(name));
+						msgclose2.appendChild(cls);
+						System.out.println(GUIhome.windowList.size());
+						try {
+							Socket selfCon=new Socket(host.IP, host.port);
+							ObjectOutputStream os = new ObjectOutputStream(selfCon.getOutputStream());
+							os.writeObject(msgclose2);
+							selfCon.close();
+							os.close();
+							out.writeObject(msgclose1);
+						} catch (UnknownHostException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					} catch (ParserConfigurationException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+					}
 					try {
 						toPeer.close();
 					} catch (IOException e1) {
