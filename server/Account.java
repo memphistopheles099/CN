@@ -6,7 +6,7 @@ public class Account {
 	private Boolean online;
 	private String IP;
 	private int port;
-	Account(String n, String p){
+	public Account(String n, String p){
 		name=n; password=p; online=false;
 	}
 	public void setInfo(String ip, int p){

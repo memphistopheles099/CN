@@ -30,7 +30,7 @@ import protocol.Header;
 
 public class Login {
 
-	private JFrame frmLogin;
+	public JFrame frmLogin;
 	private JTextField textName;
 	private JPasswordField textPassword;
 	private Socket cSocket;
@@ -95,7 +95,7 @@ public class Login {
 					Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 					Element log = doc.createElement(Header.LOG_IN);
 					doc.appendChild(log);
-					Element id = doc.createElement("ID");
+					Element id = doc.createElement(Header.ID);
 					id.appendChild(doc.createTextNode(textName.getText()));
 					log.appendChild(id);
 					Element pass = doc.createElement("PASSWORD");
@@ -146,8 +146,7 @@ public class Login {
 		JButton btnRegister = new JButton("Register");
 		btnRegister.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				Register register = new Register();
-				register.parent = frmLogin;
+				Register register = new Register(frmLogin);
 				register.frame.setVisible(true);
 				frmLogin.setVisible(false);
 			}

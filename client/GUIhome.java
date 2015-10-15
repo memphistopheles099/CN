@@ -1,5 +1,7 @@
 package client;
 
+import java.net.*;
+
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -12,6 +14,8 @@ import javax.swing.DefaultListModel;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -19,6 +23,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.swing.JTextArea;
 import javax.swing.JButton;
@@ -41,20 +47,21 @@ import protocol.Header;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-
 class startChat extends Thread{
 	private Socket chat;
 	private String name;
 	private ServerSocket server;
 	public startChat(String n, ServerSocket s, Socket c){
 		name = n;
-		chat = c;
 		server = s;
+		chat = c;
 	}
 	public void run(){
 		try {
 			ObjectInputStream in = new ObjectInputStream(chat.getInputStream());
 			Boolean created = false;
+			
+			
 			while (true){
 				try {
 					Document message = (Document)in.readObject();
@@ -75,16 +82,81 @@ class startChat extends Thread{
 						Peer buddy = new Peer(root.getElementsByTagName("NAME").item(0).getTextContent(),
 								root.getElementsByTagName("IP").item(0).getTextContent(),
 								Integer.parseInt(root.getElementsByTagName("PORT").item(0).getTextContent()));
+						
 						GUIhome.newWindow(
 								new Peer(name,InetAddress.getLocalHost().getHostAddress(),server.getLocalPort()),
 								buddy, root.getElementsByTagName("MESSAGE").item(0).getTextContent()
 								);
 					}
 				} catch (ClassNotFoundException e) {
+				}
+				}
+			
+			/*
+			while (true){
+				try {
+					Document message = (Document)in.readObject();
+					System.out.println("Message received.");
+					Element root = message.getDocumentElement();
+					String nameGuess = root.getElementsByTagName(Header.ID).item(0).getTextContent();
+					
+					
+					for (int i = 0; i < GUIhome.windowList.getSize(); i++){
+						if (nameGuess.equals(GUIhome.windowList.elementAt(i).name)){
+							created = true;
+							GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("MESSAGE").item(0).getTextContent());
+							break;
+						}
+					}
+					if(!created){
+						Peer buddy = new Peer(root.getElementsByTagName(Header.ID).item(0).getTextContent(),
+								root.getElementsByTagName("IP").item(0).getTextContent(),
+								Integer.parseInt(root.getElementsByTagName("PORT").item(0).getTextContent()));
+						GUIhome.newWindow(
+								new Peer(name,InetAddress.getLocalHost().getHostAddress(),server.getLocalPort()),
+								buddy, root.getElementsByTagName("MESSAGE").item(0).getTextContent()
+								);
+					}
+					/*
+					System.out.println(root.getNodeName());
+					System.out.println("Message not match");
+					switch(root.getNodeName()){
+					case Header.CHAT:{
+						
+						break;
+					}
+					case Header.SENDFILE:{
+						String name = root.getElementsByTagName(Header.ID).item(0).getTextContent();
+						String filename = root.getElementsByTagName(Header.FILENAME).item(0).getTextContent();
+						String nameOnly = filename.substring(0, filename.indexOf("."));
+						String ext = filename.substring(filename.indexOf("."),filename.length());
+						String path = "C:\\Chat4N\\";
+						int i=1;
+						if(new File(path+nameOnly+ext).exists())
+						while (true){
+							String temp= nameOnly.concat("_"+String.valueOf(i));
+							if(new File(path+temp+ext).exists()) i++;
+							else {
+								nameOnly=temp;
+								break;
+							}
+						}
+						File receivedFile = new File(path+nameOnly+ext);
+						receivedFile.getParentFile().mkdirs();
+						byte[] data = (byte[])in.readObject();
+						FileOutputStream fos = new FileOutputStream(receivedFile);
+						fos.write(data);
+						fos.close();
+						int res = JOptionPane.showConfirmDialog(null, name+" has just sent a file named "+nameOnly+ext+".\nDo you want to keep it?","File Receiving",JOptionPane.YES_NO_OPTION);
+						if (res==JOptionPane.NO_OPTION) receivedFile.delete();
+						break;
+					}
+					}
+				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
+			}*/
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -104,7 +176,7 @@ class chatWaiter extends Thread{
 		while (true){
 			try {
 				Socket c = server.accept();
-				Thread chat = new startChat(name,server, c);
+				Thread chat = new startChat(name, server, c);
 				chat.start();
 				
 			} catch (IOException e) {
@@ -115,8 +187,9 @@ class chatWaiter extends Thread{
 	}
 }
 
-
 public class GUIhome {
+	JList<Peer> list;
+	DefaultListModel<Peer> buddyList;
 	public static DefaultListModel<GUIp2p> windowList = new DefaultListModel<GUIp2p>();
 	ObjectOutputStream out;
 	public static void newWindow(Peer me, Peer buddy, String msg){
@@ -124,9 +197,7 @@ public class GUIhome {
 		chat = new GUIp2p(me, buddy);
 		chat.frame.setVisible(true);
 		chat.receiveMessage(msg);
-		System.out.println("ADDING");
 		windowList.addElement(chat);
-		System.out.println("ADDED");
 	}
 	public static void closeWindow(String name){
 		for (int i = 0; i < windowList.size(); i++){
@@ -137,7 +208,6 @@ public class GUIhome {
 	JFrame frame;
 	private Socket csocket=null;
 	private ServerSocket ssocket=null;
-	Thread waiter;
 	String name;
 	JButton btnLogout;
 	/**
@@ -171,20 +241,18 @@ public class GUIhome {
 	private void initialize() {
 		try {
 			ssocket = new ServerSocket(0);
-			waiter = new chatWaiter(name, ssocket);
-			waiter.start();
 			csocket = new Socket(InetAddress.getLocalHost(),6000);
 			frame = new JFrame();
 			out = new ObjectOutputStream(csocket.getOutputStream());
 			frame.setTitle("4N+T");
 			frame.setBounds(100, 100, 348, 291);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			DefaultListModel<Peer> buddyList= new DefaultListModel<Peer>();
+			buddyList= new DefaultListModel<Peer>();
 			try {
 				Document memberList = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 				Element requestList = memberList.createElement("REQUEST_LIST");
 				memberList.appendChild(requestList);
-				Element name_t = memberList.createElement("NAME");
+				Element name_t = memberList.createElement(Header.ID);
 				name_t.appendChild(memberList.createTextNode(name));
 				requestList.appendChild(name_t);
 				Element ip_t =  memberList.createElement("IP");
@@ -205,7 +273,7 @@ public class GUIhome {
 								Node n = nodes.item(i);
 								if (n.getNodeType()==Node.ELEMENT_NODE){
 									Element elem = (Element)n;
-									String name = elem.getElementsByTagName("NAME").item(0).getTextContent();
+									String name = elem.getElementsByTagName(Header.ID).item(0).getTextContent();
 									String ip = elem.getElementsByTagName("IP").item(0).getTextContent();
 									int port = Integer.parseInt(elem.getElementsByTagName("PORT").item(0).getTextContent());
 									buddyList.addElement(new Peer(name, ip, port));
@@ -229,7 +297,7 @@ public class GUIhome {
 			}
 			
 			
-			JList<Peer> list= new JList<Peer>(buddyList);
+			list= new JList<Peer>(buddyList);
 			JButton btnChat = new JButton("Chat");
 			btnChat.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -253,24 +321,22 @@ public class GUIhome {
 			btnLogout = new JButton("\u0110\u0103ng xu\u1EA5t");
 			btnLogout.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					waiter.stop();
-					/*
-					 * 
-					 * Gui message LOG OUT cho server.
-					 * 
-					 */
 					try {
 						Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 						Element logout = doc.createElement(Header.LOG_OUT);
-						Element id = doc.createElement("ID");
-						id.appendChild(doc.createTextNode(name));
-						logout.appendChild(id);
 						doc.appendChild(logout);
+						Element id = doc.createElement(Header.ID);
+						id.appendChild(doc.createTextNode(name));
+						logout.appendChild(id);						
 						try {
-							
+							ObjectOutputStream out = new ObjectOutputStream(csocket.getOutputStream());
 							out.writeObject(doc);
 							frame.setVisible(false);
-							//Close all chat Window ??
+							csocket.close();
+							
+							//close all chat window
+						//	for (int i = 0; i < windowList.size(); i++)
+						//		windowList.remove(i);
 							
 						} catch (UnknownHostException e2) {
 							// TODO Auto-generated catch block
@@ -286,23 +352,65 @@ public class GUIhome {
 				}
 			});
 			
-			
+
+			frame.addWindowListener(new java.awt.event.WindowAdapter(){
+				public void windowClosing(java.awt.event.WindowEvent e){
+					btnLogout.doClick();
+				}
+			});
 			JLabel lblDanhSchOnline = new JLabel("Danh s\u00E1ch online");
 			
 			JButton btnRefresh = new JButton("Refresh");
 			btnRefresh.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					/*
-					 * 
 					 * Yeu cau danh sach moi duoc cap nhat.
-					 * 
 					 */
-				}
-			});
-			frame.addWindowListener(new java.awt.event.WindowAdapter(){
-				public void windowClosing(java.awt.event.WindowEvent e){
-					btnLogout.doClick();
-				}
+					try {
+						Document memberList = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element requestList = memberList.createElement("REQUEST_LIST");
+						memberList.appendChild(requestList);
+						Element name_t = memberList.createElement(Header.ID);
+						name_t.appendChild(memberList.createTextNode(name));
+						requestList.appendChild(name_t);
+						Element ip_t =  memberList.createElement("IP");
+						ip_t.appendChild(memberList.createTextNode(String.valueOf(InetAddress.getLocalHost().getHostAddress())));
+						requestList.appendChild(ip_t);
+						Element port_t = memberList.createElement("PORT");
+						port_t.appendChild(memberList.createTextNode(String.valueOf(ssocket.getLocalPort())));
+						requestList.appendChild(port_t);
+						try {
+							ObjectOutputStream out = new ObjectOutputStream(csocket.getOutputStream());
+							out.writeObject(memberList);
+							ObjectInputStream in = new ObjectInputStream(csocket.getInputStream());
+							try {
+								Document req = (Document) in.readObject();
+								Element listfriend = req.getDocumentElement();
+								if (listfriend.getNodeName().equals("LIST_FRIEND")) {
+									NodeList nodes = listfriend.getElementsByTagName("FRIEND");
+									for (int i = 0; i < nodes.getLength(); i++) {
+										Node n = nodes.item(i);
+										if (n.getNodeType() == Node.ELEMENT_NODE) {
+											Element elem = (Element) n;
+											String name = elem.getElementsByTagName(Header.ID).item(0).getTextContent();
+											String ip = elem.getElementsByTagName("IP").item(0).getTextContent();
+											int port = Integer.parseInt(elem.getElementsByTagName("PORT").item(0).getTextContent());
+											buddyList.addElement(new Peer(name, ip, port));
+										}
+									}
+								}
+							} catch (ClassNotFoundException e1) {
+								e1.printStackTrace();
+							}
+						} catch(IOException e2) {
+							e2.printStackTrace();
+						}
+					} catch (ParserConfigurationException e) {
+						e.printStackTrace();
+					} catch (UnknownHostException e1) {
+						e1.printStackTrace();
+					}
+				}	
 			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 			groupLayout.setHorizontalGroup(

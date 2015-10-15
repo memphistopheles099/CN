@@ -3,35 +3,84 @@ package client;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import javax.swing.SwingConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import protocol.Header;
 
 import javax.swing.DropMode;
 import javax.swing.JTextArea;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.io.ObjectOutputStream;
 
 class chatListener extends Thread{
 	//public chatListener()
 }
-
+class FileTransfer extends Thread{
+	private ObjectOutputStream oos;
+	private File file;
+	private String hostname;
+	public FileTransfer(ObjectOutputStream s, File f, String n){
+		oos = s;
+		file = f;
+		hostname = n;
+	}
+	public void run() {
+		try {
+			try {
+				try{
+					FileInputStream fis = new FileInputStream(file);
+					byte[] data = new byte[(int)file.length()];
+					fis.read(data);
+					fis.close();
+					
+					Document fileSending = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+					Element sendFile = fileSending.createElement(Header.SENDFILE);
+					fileSending.appendChild(sendFile);
+					Element name = fileSending.createElement(Header.ID);
+					name.appendChild(fileSending.createTextNode(hostname));
+					sendFile.appendChild(name);
+					Element filename = fileSending.createElement(Header.FILENAME);
+					filename.appendChild(fileSending.createTextNode(file.getName()));
+					sendFile.appendChild(filename);
+					oos.writeObject(fileSending);
+					oos.writeObject(data);
+				}
+				catch (FileNotFoundException e){
+					JOptionPane.showMessageDialog(null, "File kh\u00F4ng t\u1ED3n t\u1EA1i");
+				}
+			} catch (ParserConfigurationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
 public class GUIp2p {
 
 	JFrame frame;
@@ -42,6 +91,10 @@ public class GUIp2p {
 	private Peer host;
 	private int port;
 	private JTextArea textAreaMsgShow;
+	public JTextArea textAreaMsgType;
+	public JCheckBox chckbxSendbyEnter;
+	public JButton btnSend;
+	public String message;
 	ObjectOutputStream out;
 	GUIp2p(Peer h, Peer buddy){
 		name = buddy.name;
@@ -83,6 +136,7 @@ public class GUIp2p {
 	 */
 	public GUIp2p(Socket s) throws UnknownHostException, IOException {
 		toPeer = s;
+		
 		initialize();
 	}
 
@@ -95,19 +149,18 @@ public class GUIp2p {
 	private void initialize(){
 		try {
 			out = new ObjectOutputStream(toPeer.getOutputStream());
-			toPeer = new Socket(IP,port);
 			frame = new JFrame();
-			frame.setBounds(100, 100, 484, 358);
 			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			frame.setBounds(100, 100, 484, 358);
 			frame.setTitle(name);
 			SendbyEnter = true;
 	
 			textAreaMsgShow = new JTextArea();
 			textAreaMsgShow.setEditable(false);
 			
-			JTextArea textAreaMsgType = new JTextArea();
+			textAreaMsgType = new JTextArea();
 			
-			JButton btnSend = new JButton("G\u1EEDi");
+			btnSend = new JButton("G\u1EEDi");
 			btnSend.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					/*
@@ -115,25 +168,23 @@ public class GUIp2p {
 					 */
 					try {
 						Document msg = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-						Element chat = msg.createElement("SESSION_CHAT_ME");
+						Element chat = msg.createElement(Header.CHAT);
 						msg.appendChild(chat);
-						Element chatName = msg.createElement("NAME");
+						Element chatName = msg.createElement(Header.ID);
 						chatName.appendChild(msg.createTextNode(host.name));
 						chat.appendChild(chatName);
-						System.out.println(host.name);
 						Element chatIP = msg.createElement("IP");
 						chatIP.appendChild(msg.createTextNode(host.IP));
 						chat.appendChild(chatIP);
-						System.out.println(host.IP);
 						Element chatPort = msg.createElement("PORT");
 						chatPort.appendChild(msg.createTextNode(String.valueOf(host.port)));
 						chat.appendChild(chatPort);
 						Element mes = msg.createElement("MESSAGE");
 						mes.appendChild(msg.createTextNode(textAreaMsgType.getText()));
 						chat.appendChild(mes);
-						System.out.println(host.port);
 						try {
 							out.writeObject(msg);
+							System.out.println(host+"send to "+toPeer+": "+textAreaMsgType.getText());
 							textAreaMsgShow.setText(textAreaMsgShow.getText()+"Me: "+textAreaMsgType.getText()+"\n");
 							textAreaMsgType.setText("");
 						} catch (IOException e1) {
@@ -150,16 +201,22 @@ public class GUIp2p {
 			JButton btnAttache = new JButton("\u0110\u00EDnh k\u00E8m t\u1EC7p");
 			btnAttache.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
+					/*
+					 * Send a file 
+					 */
 					
 					/*
-					 * 
-					 * Send a file 
-					 * 
-					 */
+					JFileChooser choose = new JFileChooser();
+					choose.setCurrentDirectory(new File(System.getProperty("user.home")));
+					int res = choose.showOpenDialog(null);
+					if (res==JFileChooser.APPROVE_OPTION){
+						Thread sendFile = new FileTransfer(out, choose.getSelectedFile(), host.name);
+						sendFile.start();
+					}*/
 				}
 			});
 			
-			JCheckBox chckbxSendbyEnter = new JCheckBox("Nh\u1EA5n Enter \u0111\u1EC3 g\u1EEDi");
+			chckbxSendbyEnter = new JCheckBox("Nh\u1EA5n Enter \u0111\u1EC3 g\u1EEDi");
 			chckbxSendbyEnter.setSelected(true);
 			chckbxSendbyEnter.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
@@ -182,7 +239,6 @@ public class GUIp2p {
 					}
 				}
 			});
-
 			frame.addWindowListener(new java.awt.event.WindowAdapter(){
 				public void windowClosing(java.awt.event.WindowEvent e){
 					/*

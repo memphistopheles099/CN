@@ -11,11 +11,20 @@ import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingUtilities;
+import javax.xml.parsers.*;
 
 import java.awt.Font;
 import javax.swing.JTextField;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import java.io.*;
+import java.net.*;
+import server.*;
+
+import protocol.Header;
 
 public class Register {
 
@@ -24,7 +33,9 @@ public class Register {
 	private JTextField textName;
 	private JTextField textPassword;
 	private JTextField txtLocalhost;
-
+	private JButton btnAbort;
+	
+	private Socket cSocket;
 	/**
 	 * Launch the application.
 	 */
@@ -32,7 +43,7 @@ public class Register {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					Register window = new Register();
+					Register window = new Register(null);
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -44,7 +55,8 @@ public class Register {
 	/**
 	 * Create the application.
 	 */
-	public Register() {
+	public Register(JFrame p) {
+		parent = p;
 		initialize();
 	}
 
@@ -67,11 +79,64 @@ public class Register {
 				 * Send register_message to server
 				 * Using Server.addAccount( Account )
 				 */
+				String name = textName.getText();
+				String password = textPassword.getText();
+				if (name.isEmpty() || password.isEmpty())
+					JOptionPane.showMessageDialog(null, "Please input your Username and Password");
+				else {
+					try {
+						Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element reg = doc.createElement(Header.REGISTER);
+						doc.appendChild(reg);
+						Element id = doc.createElement("ID");
+						id.appendChild(doc.createTextNode(textName.getText()));
+						reg.appendChild(id);
+						Element pass = doc.createElement("PASSWORD");
+						pass.appendChild(doc.createTextNode(textPassword.getText()));
+						reg.appendChild(pass);
+						try {
+							cSocket = new Socket(InetAddress.getLocalHost(), 6000);
+							ObjectOutputStream out = new ObjectOutputStream(cSocket.getOutputStream());
+							out.writeObject(doc);
+							ObjectInputStream in = new ObjectInputStream(cSocket.getInputStream());
+							try {
+								Document docin = (Document) in.readObject();
+								Element response = docin.getDocumentElement();
+								if (response.getNodeName().equals(Header.RESPONSE)) {
+									if (response.getTextContent().equals("ACCEPT")) {
+										JOptionPane.showMessageDialog(null, "Success");
+										frame.setVisible(false);
+										if (parent != null)
+											parent.setVisible(true);
+										else {
+											Login login = new Login();
+											login.frmLogin.setVisible(true);
+										}		
+									}
+									else 
+										JOptionPane.showMessageDialog(null, "Username already exists");
+								}
+							} catch (ClassNotFoundException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} 
+						} catch (UnknownHostException e2) {
+						// TODO Auto-generated catch block
+							e2.printStackTrace(); 
+						} catch (IOException e3) {
+						// TODO Auto-generated catch block
+							e3.printStackTrace();
+						}
+					} catch (ParserConfigurationException e4) {
+					// TODO Auto-generated catch block
+						e4.printStackTrace();
+					}
+				}
 			}
 		});
 		btnRegister.setFont(new Font("Tahoma", Font.BOLD, 11));
 		
-		JButton btnAbort = new JButton("Abort");
+		 btnAbort = new JButton("Abort");
 		btnAbort.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(parent!=null) parent.setVisible(true);
