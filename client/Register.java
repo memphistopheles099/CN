@@ -88,7 +88,7 @@ public class Register {
 						Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 						Element reg = doc.createElement(Header.REGISTER);
 						doc.appendChild(reg);
-						Element id = doc.createElement("ID");
+						Element id = doc.createElement(Header.ID);
 						id.appendChild(doc.createTextNode(textName.getText()));
 						reg.appendChild(id);
 						Element pass = doc.createElement("PASSWORD");

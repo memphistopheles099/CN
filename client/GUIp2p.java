@@ -88,8 +88,8 @@ public class GUIp2p {
 	String name;
 	private String IP;
 	private Socket toPeer;
-	private Peer host;
 	private int port;
+	private Peer host;
 	private JTextArea textAreaMsgShow;
 	public JTextArea textAreaMsgType;
 	public JCheckBox chckbxSendbyEnter;
@@ -103,6 +103,7 @@ public class GUIp2p {
 		host = h;
 		try {
 			toPeer = new Socket(IP,port);
+			out = new ObjectOutputStream(toPeer.getOutputStream());
 			initialize();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -120,7 +121,7 @@ public class GUIp2p {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					GUIp2p window = new GUIp2p(null);
+					GUIp2p window = new GUIp2p(null,null);
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -130,25 +131,12 @@ public class GUIp2p {
 	}
 
 	/**
-	 * Create the application.
-	 * @throws IOException 
-	 * @throws UnknownHostException 
-	 */
-	public GUIp2p(Socket s) throws UnknownHostException, IOException {
-		toPeer = s;
-		
-		initialize();
-	}
-
-	/**
 	 * Initialize the contents of the frame.
 	 */
 	public void receiveMessage(String msg){
 		textAreaMsgShow.setText(textAreaMsgShow.getText()+name+": "+msg+"\n");
 	}
 	private void initialize(){
-		try {
-			out = new ObjectOutputStream(toPeer.getOutputStream());
 			frame = new JFrame();
 			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			frame.setBounds(100, 100, 484, 358);
@@ -164,7 +152,12 @@ public class GUIp2p {
 			btnSend.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					/*
-					 * Gui messages
+					 * 
+					 * 
+					 *  Send a message 
+					 *  user toPeer to send  
+					 *  
+					 *  
 					 */
 					try {
 						Document msg = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
@@ -203,16 +196,15 @@ public class GUIp2p {
 				public void actionPerformed(ActionEvent arg0) {
 					/*
 					 * Send a file 
+					 *
 					 */
-					
-					/*
 					JFileChooser choose = new JFileChooser();
 					choose.setCurrentDirectory(new File(System.getProperty("user.home")));
 					int res = choose.showOpenDialog(null);
 					if (res==JFileChooser.APPROVE_OPTION){
 						Thread sendFile = new FileTransfer(out, choose.getSelectedFile(), host.name);
 						sendFile.start();
-					}*/
+					}
 				}
 			});
 			
@@ -246,6 +238,13 @@ public class GUIp2p {
 					 *  xoa khoi windowList trong GUIhome
 					 *  
 					 */
+					GUIhome.closeWindow(name);
+					try {
+						toPeer.close();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
@@ -281,12 +280,5 @@ public class GUIp2p {
 						.addContainerGap(88, Short.MAX_VALUE))
 			);
 			frame.getContentPane().setLayout(groupLayout);
-		} catch (UnknownHostException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
 	}
 }

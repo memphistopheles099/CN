@@ -13,5 +13,6 @@ public class Header {
 	public static final String SENDFILE = "SEND_FILE";
 	public static final String FILENAME = "FILE_NAME";
 	public static final String CHAT = "SESSION_CHAT_ME";
+	public static final String MSG = "MESSAGE";
 	
 }
