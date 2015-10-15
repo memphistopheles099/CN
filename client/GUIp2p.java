@@ -13,11 +13,18 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import javax.swing.SwingConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import javax.swing.DropMode;
 import javax.swing.JTextArea;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -32,13 +39,25 @@ public class GUIp2p {
 	String name;
 	private String IP;
 	private Socket toPeer;
+	private Peer host;
 	private int port;
 	private JTextArea textAreaMsgShow;
-	GUIp2p(String n, String ip, int p){
-		name = n;
-		IP = ip;
-		port = p;
-		initialize();
+	ObjectOutputStream out;
+	GUIp2p(Peer h, Peer buddy){
+		name = buddy.name;
+		IP = buddy.IP;
+		port = buddy.port;
+		host = h;
+		try {
+			toPeer = new Socket(IP,port);
+			initialize();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -63,7 +82,7 @@ public class GUIp2p {
 	 * @throws UnknownHostException 
 	 */
 	public GUIp2p(Socket s) throws UnknownHostException, IOException {
-		
+		toPeer = s;
 		initialize();
 	}
 
@@ -71,23 +90,15 @@ public class GUIp2p {
 	 * Initialize the contents of the frame.
 	 */
 	public void receiveMessage(String msg){
-		textAreaMsgShow.setText(textAreaMsgShow.getText()+"name: ");
+		textAreaMsgShow.setText(textAreaMsgShow.getText()+name+": "+msg+"\n");
 	}
 	private void initialize(){
-		frame.addWindowListener(new java.awt.event.WindowAdapter(){
-			public void windowClosing(java.awt.event.WindowEvent e){
-				/*
-				 * 
-				 *  xoa khoi windowList trong GUIhome
-				 *  
-				 */
-			}
-		});
 		try {
+			out = new ObjectOutputStream(toPeer.getOutputStream());
 			toPeer = new Socket(IP,port);
 			frame = new JFrame();
 			frame.setBounds(100, 100, 484, 358);
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			frame.setTitle(name);
 			SendbyEnter = true;
 	
@@ -100,16 +111,39 @@ public class GUIp2p {
 			btnSend.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					/*
-					 * 
-					 * 
-					 *  Send a message 
-					 *  user toPeer to send  
-					 *  
-					 *  
+					 * Gui messages
 					 */
-					String message = textAreaMsgType.getText() ;
-					textAreaMsgType.setText("");
-					textAreaMsgShow.setText(textAreaMsgShow.getText()+"Me: "+message+"\n");
+					try {
+						Document msg = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element chat = msg.createElement("SESSION_CHAT_ME");
+						msg.appendChild(chat);
+						Element chatName = msg.createElement("NAME");
+						chatName.appendChild(msg.createTextNode(host.name));
+						chat.appendChild(chatName);
+						System.out.println(host.name);
+						Element chatIP = msg.createElement("IP");
+						chatIP.appendChild(msg.createTextNode(host.IP));
+						chat.appendChild(chatIP);
+						System.out.println(host.IP);
+						Element chatPort = msg.createElement("PORT");
+						chatPort.appendChild(msg.createTextNode(String.valueOf(host.port)));
+						chat.appendChild(chatPort);
+						Element mes = msg.createElement("MESSAGE");
+						mes.appendChild(msg.createTextNode(textAreaMsgType.getText()));
+						chat.appendChild(mes);
+						System.out.println(host.port);
+						try {
+							out.writeObject(msg);
+							textAreaMsgShow.setText(textAreaMsgShow.getText()+"Me: "+textAreaMsgType.getText()+"\n");
+							textAreaMsgType.setText("");
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					} catch (ParserConfigurationException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			});
 			
@@ -148,7 +182,16 @@ public class GUIp2p {
 					}
 				}
 			});
-			
+
+			frame.addWindowListener(new java.awt.event.WindowAdapter(){
+				public void windowClosing(java.awt.event.WindowEvent e){
+					/*
+					 * 
+					 *  xoa khoi windowList trong GUIhome
+					 *  
+					 */
+				}
+			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 			groupLayout.setHorizontalGroup(
 				groupLayout.createParallelGroup(Alignment.LEADING)

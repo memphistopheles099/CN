@@ -108,8 +108,18 @@ class StreamHandler extends Thread{
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					break;
 				}
-				
+				case "LOGOUT" : {
+					String id = root.getElementsByTagName("ID").item(0).getTextContent();
+					for(int i = 0; i < list.size(); i++){
+						if (id.equals(list.getElementAt(i).getName())) {
+							list.getElementAt(i).setOffline();
+							break;
+						}
+					}
+					break;
+				}
 				
 				
 				
@@ -137,6 +147,7 @@ public class Server {
 		accountList = new DefaultListModel<Account>();
 		accountList.addElement(new Account("abcd","1234"));
 		accountList.addElement(new Account("efgh","1234"));
+		accountList.addElement(new Account("xyzt","1234"));
 	}
 	public static void newAccount(Account a){
 		accountList.addElement(a);

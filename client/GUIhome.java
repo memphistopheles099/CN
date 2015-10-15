@@ -36,14 +36,20 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import protocol.Header;
+
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 class startChat extends Thread{
 	private Socket chat;
-	public startChat(Socket c){
+	private String name;
+	private ServerSocket server;
+	public startChat(String n, ServerSocket s, Socket c){
+		name = n;
 		chat = c;
+		server = s;
 	}
 	public void run(){
 		try {
@@ -52,20 +58,27 @@ class startChat extends Thread{
 			while (true){
 				try {
 					Document message = (Document)in.readObject();
-					Element root = message.getElementById("SESSION_CHAT_ME");
-					String name = ((Element)root.getElementsByTagName("NAME").item(0)).getTextContent();
-					if(created)
-						for (int i = 0; i < GUIhome.windowList.getSize(); i++){
-							if (name.equals(GUIhome.windowList.elementAt(i).name)){
-								GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("MESSAGE").item(0).getTextContent());
-								break;
-							}
+					Element root = message.getDocumentElement();
+					String nameGuess = root.getElementsByTagName("NAME").item(0).getTextContent();
+					System.out.println(GUIhome.windowList.getSize());
+					for (int i = 0; i < GUIhome.windowList.getSize(); i++){
+						System.out.println("Going for "+i);
+						System.out.println(GUIhome.windowList.elementAt(i).name);
+						if (nameGuess.equals(GUIhome.windowList.elementAt(i).name)){
+							System.out.println("Got it");
+							created = true;
+							GUIhome.windowList.elementAt(i).receiveMessage(root.getElementsByTagName("MESSAGE").item(0).getTextContent());
+							break;
 						}
-					else{
-						GUIhome.newWindow(root.getElementsByTagName("NAME").item(0).getTextContent(),
+					}
+					if(!created){
+						Peer buddy = new Peer(root.getElementsByTagName("NAME").item(0).getTextContent(),
 								root.getElementsByTagName("IP").item(0).getTextContent(),
-								Integer.parseInt(root.getElementsByTagName("PORT").item(0).getTextContent()),
-								root.getElementsByTagName("SESSION_CHAT_ME").item(0).getTextContent());
+								Integer.parseInt(root.getElementsByTagName("PORT").item(0).getTextContent()));
+						GUIhome.newWindow(
+								new Peer(name,InetAddress.getLocalHost().getHostAddress(),server.getLocalPort()),
+								buddy, root.getElementsByTagName("MESSAGE").item(0).getTextContent()
+								);
 					}
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
@@ -82,14 +95,17 @@ class startChat extends Thread{
 
 class chatWaiter extends Thread{
 	ServerSocket server;
-	public chatWaiter(ServerSocket s){
+	String name;
+	public chatWaiter(String n, ServerSocket s){
+		name = n;
 		server=s;
 	}
 	public void run(){
 		while (true){
 			try {
 				Socket c = server.accept();
-				Thread chat = new startChat(c);
+				Thread chat = new startChat(name,server, c);
+				chat.start();
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -100,28 +116,17 @@ class chatWaiter extends Thread{
 }
 
 
-class Peer {
-	String name;
-	String IP;
-	int port;
-	Peer(String n, String i, int p){
-		name = n;
-		IP = i;
-		port = p;
-	}
-	public String toString(){
-		return name+"<"+IP+":"+port+">";
-	}
-}
-
 public class GUIhome {
 	public static DefaultListModel<GUIp2p> windowList = new DefaultListModel<GUIp2p>();
-	public static void newWindow(String name, String ip, int port, String msg){
+	ObjectOutputStream out;
+	public static void newWindow(Peer me, Peer buddy, String msg){
 		GUIp2p chat;
-		chat = new GUIp2p(name, ip, port);
+		chat = new GUIp2p(me, buddy);
 		chat.frame.setVisible(true);
 		chat.receiveMessage(msg);
+		System.out.println("ADDING");
 		windowList.addElement(chat);
+		System.out.println("ADDED");
 	}
 	public static void closeWindow(String name){
 		for (int i = 0; i < windowList.size(); i++){
@@ -164,17 +169,13 @@ public class GUIhome {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame.addWindowListener(new java.awt.event.WindowAdapter(){
-			public void windowClosing(java.awt.event.WindowEvent e){
-				btnLogout.doClick();
-			}
-		});
 		try {
 			ssocket = new ServerSocket(0);
-			waiter = new chatWaiter(ssocket);
+			waiter = new chatWaiter(name, ssocket);
 			waiter.start();
 			csocket = new Socket(InetAddress.getLocalHost(),6000);
 			frame = new JFrame();
+			out = new ObjectOutputStream(csocket.getOutputStream());
 			frame.setTitle("4N+T");
 			frame.setBounds(100, 100, 348, 291);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -193,7 +194,6 @@ public class GUIhome {
 				port_t.appendChild(memberList.createTextNode(String.valueOf(ssocket.getLocalPort())));
 				requestList.appendChild(port_t);
 				try {
-					ObjectOutputStream out = new ObjectOutputStream(csocket.getOutputStream());
 					out.writeObject(memberList);
 					ObjectInputStream in = new ObjectInputStream(csocket.getInputStream());
 					try {
@@ -235,8 +235,14 @@ public class GUIhome {
 				public void actionPerformed(ActionEvent e) {
 					int idx = list.getSelectedIndex();
 					GUIp2p chatWindow;
-					chatWindow = new GUIp2p(buddyList.getElementAt(idx).name,buddyList.getElementAt(idx).IP,buddyList.getElementAt(idx).port);
-					chatWindow.frame.setVisible(true);
+					try {
+						chatWindow = new GUIp2p(new Peer(name,InetAddress.getLocalHost().getHostAddress(),ssocket.getLocalPort()),new Peer(buddyList.getElementAt(idx).name,buddyList.getElementAt(idx).IP,buddyList.getElementAt(idx).port));
+						chatWindow.frame.setVisible(true);
+						windowList.addElement(chatWindow);
+					} catch (UnknownHostException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			});
 			
@@ -253,6 +259,30 @@ public class GUIhome {
 					 * Gui message LOG OUT cho server.
 					 * 
 					 */
+					try {
+						Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+						Element logout = doc.createElement(Header.LOG_OUT);
+						Element id = doc.createElement("ID");
+						id.appendChild(doc.createTextNode(name));
+						logout.appendChild(id);
+						doc.appendChild(logout);
+						try {
+							
+							out.writeObject(doc);
+							frame.setVisible(false);
+							//Close all chat Window ??
+							
+						} catch (UnknownHostException e2) {
+							// TODO Auto-generated catch block
+							e2.printStackTrace(); 
+						} catch (IOException e3) {
+						// TODO Auto-generated catch block
+							e3.printStackTrace();
+						}	
+					} catch (ParserConfigurationException e4) {
+						// TODO Auto-generated catch block
+						e4.printStackTrace();
+						}					
 				}
 			});
 			
@@ -267,6 +297,11 @@ public class GUIhome {
 					 * Yeu cau danh sach moi duoc cap nhat.
 					 * 
 					 */
+				}
+			});
+			frame.addWindowListener(new java.awt.event.WindowAdapter(){
+				public void windowClosing(java.awt.event.WindowEvent e){
+					btnLogout.doClick();
 				}
 			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
