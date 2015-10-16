@@ -32,7 +32,6 @@ public class Register {
 	public JFrame parent;
 	private JTextField textName;
 	private JTextField textPassword;
-	private JTextField txtLocalhost;
 	private JButton btnAbort;
 	
 	private Socket cSocket;
@@ -65,7 +64,8 @@ public class Register {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 303, 170);
+		frame.setResizable(false);
+		frame.setBounds(100, 100, 303, 128);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		
 		JLabel lblNickname = new JLabel("Nickname");
@@ -164,34 +164,27 @@ public class Register {
 		
 		textPassword = new JTextField();
 		textPassword.setColumns(10);
-		
-		JLabel lblHost = new JLabel("Host");
-		
-		txtLocalhost = new JTextField();
-		txtLocalhost.setText("localhost");
-		txtLocalhost.setColumns(10);
 		GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnRegister)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(btnReset, GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(btnAbort, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE))
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 						.addGroup(groupLayout.createSequentialGroup()
 							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 								.addComponent(lblNickname)
-								.addComponent(lblHost)
 								.addComponent(lblPassword))
+							.addGap(18)
+							.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+								.addComponent(textName, GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+								.addComponent(textPassword, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 81, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addComponent(textPassword)
-								.addComponent(txtLocalhost, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)
-								.addComponent(textName, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 213, Short.MAX_VALUE))))
+							.addComponent(btnReset, GroupLayout.PREFERRED_SIZE, 90, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.UNRELATED)
+							.addComponent(btnAbort, GroupLayout.DEFAULT_SIZE, 88, Short.MAX_VALUE)
+							.addPreferredGap(ComponentPlacement.RELATED)))
 					.addGap(8))
 		);
 		groupLayout.setVerticalGroup(
@@ -203,17 +196,13 @@ public class Register {
 						.addComponent(lblNickname))
 					.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(txtLocalhost, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblHost))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblPassword)
 						.addComponent(textPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(btnRegister)
-						.addComponent(btnReset)
-						.addComponent(btnAbort))
+						.addComponent(btnRegister, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnAbort, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnReset, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE))
 					.addGap(38))
 		);
 		frame.getContentPane().setLayout(groupLayout);

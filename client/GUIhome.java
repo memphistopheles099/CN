@@ -257,7 +257,8 @@ public class GUIhome {
 			Thread awake = new KeepOnline(name, oos);
 			awake.start();
 			frame = new JFrame();
-			frame.setTitle("4N+T");
+			frame.setResizable(false);
+			frame.setTitle("4N");
 			frame.setBounds(100, 100, 348, 291);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			buddyList= new DefaultListModel<Peer>();

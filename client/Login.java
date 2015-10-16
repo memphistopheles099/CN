@@ -72,6 +72,7 @@ public class Login {
 	 */
 	private void initialize() {
 		frmLogin = new JFrame();
+		frmLogin.setResizable(false);
 		frmLogin.setTitle("Login");
 		frmLogin.setBounds(100, 100, 301, 155);
 		frmLogin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

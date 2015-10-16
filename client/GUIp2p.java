@@ -138,6 +138,7 @@ public class GUIp2p {
 	}
 	private void initialize(){
 			frame = new JFrame();
+			frame.setResizable(false);
 			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			frame.setBounds(100, 100, 484, 358);
 			frame.setTitle(name);
