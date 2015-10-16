@@ -47,6 +47,42 @@ import protocol.Header;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+
+class KeepOnline extends Thread{
+	public String name;
+	private ObjectOutputStream oos;
+	public KeepOnline(String id, ObjectOutputStream s){
+		name = id;
+		oos = s;
+	}
+	public void run(){
+		try {
+			while (true){
+				Thread.sleep(50000);
+				try {
+					Document awake = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+					Element awk = awake.createElement(Header.AWK);
+					awk.appendChild(awake.createTextNode(name));
+					awake.appendChild(awk);
+					try {
+						System.out.println("Send AWK");
+						oos.writeObject(awake);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} catch (ParserConfigurationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
+
 class startChat extends Thread{
 	private Socket chat;
 	private String name;
@@ -214,9 +250,12 @@ public class GUIhome {
 			port= ssocket.getLocalPort();
 			waiter = new chatWaiter(name, ssocket);
 			waiter.start();
+			
 			csocket = new Socket(InetAddress.getLocalHost(),6000);
 			oos = new ObjectOutputStream(csocket.getOutputStream());
 			ios = new ObjectInputStream(csocket.getInputStream());
+			Thread awake = new KeepOnline(name, oos);
+			awake.start();
 			frame = new JFrame();
 			frame.setTitle("4N+T");
 			frame.setBounds(100, 100, 348, 291);
@@ -384,6 +423,53 @@ public class GUIhome {
 					btnLogout.doClick();
 				}
 			});
+			
+			JButton btnAddFriend = new JButton("Th\u00EAm b\u1EA1n");
+			btnAddFriend.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					String res = JOptionPane.showInputDialog("Nh\u1EADp t\u00EAn t\u00E0i kho\u1EA3n b\u1EA1n b\u00E8");
+					if(!res.equals("")){
+						Document addFriend;
+						try {
+							addFriend = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+							Element frReq = addFriend.createElement(Header.FR_REQ);
+							addFriend.appendChild(frReq);
+							Element name_t = addFriend.createElement(Header.ID);
+							name_t.appendChild(addFriend.createTextNode(name));
+							frReq.appendChild(name_t);
+
+							Element name_f = addFriend.createElement(Header.ID);
+							name_f.appendChild(addFriend.createTextNode(res));
+							frReq.appendChild(name_f);
+							oos.writeObject(addFriend);
+							try {
+								Document sRes = (Document)ios.readObject();
+								Element ans = sRes.getDocumentElement();
+								switch(ans.getTextContent()){
+								case Header.ACC:
+									JOptionPane.showMessageDialog(null, "Th\u00EAm b\u1EA1n th\u00E0nh c\u00F4ng");
+									break;
+								case Header.FR_AL:
+									JOptionPane.showMessageDialog(null, "\u0110\u00E3 l\u00E0 b\u1EA1n b\u00E8");
+									break;
+								case Header.REJ:
+									JOptionPane.showMessageDialog(null, "T\u00EAn t\u00E0i kho\u1EA3n kh\u00F4ng t\u1ED3n t\u1EA1i");
+									break;
+								}
+							} catch (ClassNotFoundException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} catch (ParserConfigurationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}						
+					}					
+				}
+			});
 			GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 			groupLayout.setHorizontalGroup(
 				groupLayout.createParallelGroup(Alignment.LEADING)
@@ -394,11 +480,12 @@ public class GUIhome {
 							.addGroup(groupLayout.createSequentialGroup()
 								.addPreferredGap(ComponentPlacement.RELATED)
 								.addComponent(list, GroupLayout.PREFERRED_SIZE, 198, GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addPreferredGap(ComponentPlacement.RELATED)
 								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-									.addComponent(btnLogout, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
-									.addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE)
-									.addComponent(btnChat, GroupLayout.DEFAULT_SIZE, 95, Short.MAX_VALUE))))
+									.addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
+									.addComponent(btnLogout, GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
+									.addComponent(btnChat, GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
+									.addComponent(btnAddFriend, GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE))))
 						.addContainerGap())
 			);
 			groupLayout.setVerticalGroup(
@@ -409,12 +496,13 @@ public class GUIhome {
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
 							.addGroup(groupLayout.createSequentialGroup()
-								.addComponent(btnChat, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(btnRefresh, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(btnLogout, GroupLayout.PREFERRED_SIZE, 61, GroupLayout.PREFERRED_SIZE)
-								.addGap(7))
+								.addComponent(btnChat, GroupLayout.PREFERRED_SIZE, 46, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(btnAddFriend, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(btnRefresh, GroupLayout.PREFERRED_SIZE, 46, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(btnLogout, GroupLayout.PREFERRED_SIZE, 44, GroupLayout.PREFERRED_SIZE))
 							.addComponent(list, GroupLayout.PREFERRED_SIZE, 201, GroupLayout.PREFERRED_SIZE))
 						.addContainerGap())
 			);

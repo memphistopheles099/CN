@@ -18,7 +18,28 @@ import org.w3c.dom.Element;
 
 import protocol.Header;
 
-
+class LiveTime extends Thread{
+	String name;
+	public LiveTime(String n){
+		name = n;
+	}
+	public void run(){
+		try {
+			Thread.sleep(60000);
+			for(int i = 0; i < Server.accountList.getSize(); i++)
+				if (name.equals(Server.accountList.getElementAt(i).getName())){
+					Server.accountList.getElementAt(i).setOffline();
+					break;
+				}
+					
+			
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+}
 
 class StreamHandler extends Thread{
 	InputStream is;
@@ -46,7 +67,7 @@ class StreamHandler extends Thread{
 					switch(root.getNodeName()){
 					case Header.LOG_IN:{  // Login Event
 						String id = root.getElementsByTagName(Header.ID).item(0).getTextContent();
-						String pass = root.getElementsByTagName("PASSWORD").item(0).getTextContent();
+						String pass = root.getElementsByTagName(Header.PASS).item(0).getTextContent();
 						Boolean exist = false;
 						for(int i = 0; i < Server.accountList.getSize(); i++){
 							if (id.equals(Server.accountList.getElementAt(i).getName())&&pass.equals(Server.accountList.getElementAt(i).getPass())){
@@ -58,6 +79,9 @@ class StreamHandler extends Thread{
 									ans.appendChild(res);
 									oos.writeObject(ans);
 									System.out.println(Header.LOG_IN+":"+ id);
+									Thread countDown = new LiveTime(id);
+									Server.manager.addElement(countDown);
+									countDown.start();
 									//out.close();
 								} catch (ParserConfigurationException e) {
 									// TODO Auto-generated catch block
@@ -83,11 +107,21 @@ class StreamHandler extends Thread{
 						} // end case LOGIN
 					
 					case Header.REQ_LST: {
+						
+						String nameUser = root.getElementsByTagName(Header.ID).item(0).getTextContent();
 						int idx = -1;
-						int k=0;
 						for (int i = 0; i < Server.accountList.size();  i++)
-							if (root.getElementsByTagName(Header.ID).item(0).getTextContent().equals(Server.accountList.getElementAt(i).getName())){
+							if (nameUser.equals(Server.accountList.getElementAt(i).getName())){
 								idx = i;
+								break;
+							}
+						for(int i = 0; i < Server.manager.getSize(); i++)
+							if (nameUser.equals(Server.accountList.getElementAt(i).getName())){
+								Server.manager.getElementAt(i).interrupt();
+								Server.manager.removeElementAt(i);
+								Thread countDown = new LiveTime(nameUser);
+								Server.manager.addElement(countDown);;
+								countDown.start();
 								break;
 							}
 						Server.accountList.getElementAt(idx).setOnline();
@@ -98,7 +132,8 @@ class StreamHandler extends Thread{
 							Element listFriend = ansReq.createElement("LIST_FRIEND");
 							ansReq.appendChild(listFriend);
 							for(int i = 0; i < list_req.getSize(); i++){
-								if (list_req.getElementAt(i).getState()){
+								if (list_req.getElementAt(i).getState()&&
+										Server.accountList.getElementAt(idx).isFriend(list_req.getElementAt(i).getName())){
 									Element buddy = ansReq.createElement("FRIEND");
 									Element name = ansReq.createElement(Header.ID);
 									name.appendChild(ansReq.createTextNode(list_req.getElementAt(i).getName()));
@@ -169,6 +204,66 @@ class StreamHandler extends Thread{
 						}
 						break;
 					}
+					case Header.AWK:{
+						System.out.println("AWK received");
+						String nameUser = root.getTextContent();
+						for(int i = 0; i < Server.manager.getSize(); i++)
+							if (nameUser.equals(Server.accountList.getElementAt(i).getName())){
+								System.out.print("Reset Counting Down");
+								Server.manager.getElementAt(i).interrupt();
+								Server.manager.removeElementAt(i);
+								Thread countDown = new LiveTime(nameUser);
+								Server.manager.addElement(countDown);;
+								countDown.start();
+								break;
+							}
+						break;
+					}
+					case Header.FR_REQ:{
+						try {
+							String me = root.getElementsByTagName(Header.ID).item(0).getTextContent();
+							String buddy = root.getElementsByTagName(Header.ID).item(1).getTextContent();
+							boolean exist =false;
+							for(int i = 0; i < Server.accountList.size(); i++){
+								if (buddy.equals(Server.accountList.getElementAt(i).getName())){
+									exist =true;
+									for(int j = 0; j < Server.accountList.size(); j++){
+										if (me.equals(Server.accountList.getElementAt(j).getName())) {
+											if(Server.accountList.getElementAt(j).isFriend(buddy)){
+												Document res = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+												Element ans = res.createElement(Header.RESPONSE);
+												ans.appendChild(res.createTextNode(Header.FR_AL));
+												res.appendChild(ans);
+												oos.writeObject(res);
+											}
+											else{
+											Server.accountList.getElementAt(j).addFriend(buddy);
+											Document res = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+											Element ans = res.createElement(Header.RESPONSE);
+											ans.appendChild(res.createTextNode(Header.ACC));
+											res.appendChild(ans);
+											oos.writeObject(res);
+											}
+											break;
+										}
+									}
+									break;
+								}
+							}
+							if(!exist){
+								Document res = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+								Element ans = res.createElement(Header.RESPONSE);
+								ans.appendChild(res.createTextNode(Header.REJ));
+								res.appendChild(ans);
+								oos.writeObject(res);
+							}
+							break;
+							
+						} catch (ParserConfigurationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 					} 
 				}// end switch
 			} catch (ClassNotFoundException e) {
@@ -183,11 +278,17 @@ class StreamHandler extends Thread{
 }
 
 public class Server {
+	public static DefaultListModel<Thread> manager= new DefaultListModel<Thread>();
 	public static DefaultListModel<Account> accountList;
 	public static void initList(){
+		DefaultListModel<String> fl = new DefaultListModel<String>();
+		fl.addElement("abcd");
 		accountList = new DefaultListModel<Account>();
-		accountList.addElement(new Account("abcd","1234"));
-		accountList.addElement(new Account("efgh","1234"));
+		accountList.addElement(new Account("abcd","1234",fl));
+		fl = new DefaultListModel<String>();
+		fl.addElement("abcd");
+		fl.addElement("efgh");
+		accountList.addElement(new Account("efgh","1234",fl));
 	}
 	public static void newAccount(Account a){
 		accountList.addElement(a);

@@ -103,7 +103,7 @@ public class Login {
 					Element id = doc.createElement(Header.ID);
 					id.appendChild(doc.createTextNode(textName.getText()));
 					log.appendChild(id);
-					Element pass = doc.createElement("PASSWORD");
+					Element pass = doc.createElement(Header.PASS);
 					pass.appendChild(doc.createTextNode(textPassword.getText()));
 					log.appendChild(pass);
 					try {
@@ -112,7 +112,7 @@ public class Login {
 							Document docin = (Document) ios.readObject();
 							Element response = docin.getDocumentElement();
 							if (response.getNodeName().equals(Header.RESPONSE)){
-								if (response.getTextContent().equals("ACCEPT")){
+								if (response.getTextContent().equals(Header.ACC)){
 									GUIhome home = new GUIhome(textName.getText());
 									home.frame.setVisible(true);
 									frmLogin.setVisible(false);
